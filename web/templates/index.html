@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>インフラリスク管理シミュレータ</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding-top: 20px;
+            background-color: #f5f5f5;
+        }
+        .card {
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .progress-bar-container {
+            height: 25px;
+            margin-bottom: 5px;
+            background-color: #e9ecef;
+            border-radius: 3px;
+        }
+        .progress-bar {
+            height: 100%;
+            background-color: #0d6efd;
+            border-radius: 3px;
+            transition: width 0.5s ease-in-out;
+        }
+        .event-box {
+            background-color: #f8f9fa;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .action-card {
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .action-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+        }
+        .selected-action {
+            border: 2px solid #0d6efd;
+            background-color: #f0f7ff;
+        }
+        .result-success {
+            color: #198754;
+        }
+        .result-failure {
+            color: #dc3545;
+        }
+        .loader {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 2s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="text-center mb-4">
+            <h1>インフラリスク管理シミュレータ</h1>
+            <p class="lead">インフラエンジニアのための障害対応トレーニングツール</p>
+        </header>
+
+        <!-- 初期画面（シナリオ選択） -->
+        <div id="scenario-selection" class="card p-4">
+            <h2>シナリオを選択してください</h2>
+            <div id="scenarios-list" class="row mt-3">
+                <div class="col-12">
+                    <div class="loader"></div>
+                    <p class="text-center">シナリオを読み込み中...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ゲーム画面 -->
+        <div id="game-screen" style="display: none;">
+            <div class="row">
+                <!-- システム状態 -->
+                <div class="col-md-12">
+                    <div class="card p-3">
+                        <div class="d-flex justify-content-between">
+                            <h2>システム状態</h2>
+                            <div>
+                                <span id="turn-counter" class="badge bg-primary fs-6">ターン: 1/10</span>
+                                <span id="score-display" class="badge bg-success fs-6 ms-2">スコア: 0</span>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <div class="d-flex justify-content-between">
+                                <span>CPU使用率:</span>
+                                <span id="cpu-value">50%</span>
+                            </div>
+                            <div class="progress-bar-container">
+                                <div id="cpu-bar" class="progress-bar" style="width: 50%"></div>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between">
+                                <span>メモリ使用率:</span>
+                                <span id="memory-value">50%</span>
+                            </div>
+                            <div class="progress-bar-container">
+                                <div id="memory-bar" class="progress-bar" style="width: 50%"></div>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between">
+                                <span>ディスク使用率:</span>
+                                <span id="disk-value">50%</span>
+                            </div>
+                            <div class="progress-bar-container">
+                                <div id="disk-bar" class="progress-bar" style="width: 50%"></div>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between">
+                                <span>ネットワーク負荷:</span>
+                                <span id="network-value">50%</span>
+                            </div>
+                            <div class="progress-bar-container">
+                                <div id="network-bar" class="progress-bar" style="width: 50%"></div>
+                            </div>
+                            
+                            <div class="row mt-3">
+                                <div class="col-md-4">
+                                    <div class="card p-2 text-center">
+                                        <h5>稼働サービス</h5>
+                                        <p id="services-value" class="fs-4 mb-0">5/5</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card p-2 text-center">
+                                        <h5>アラート数</h5>
+                                        <p id="alerts-value" class="fs-4 mb-0">0</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card p-2 text-center">
+                                        <h5>SLAリスク</h5>
+                                        <p id="sla-value" class="fs-4 mb-0">0%</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- イベント表示 -->
+                <div class="col-md-12 mt-3">
+                    <div class="event-box">
+                        <h4><i class="bi bi-exclamation-triangle"></i> イベント発生</h4>
+                        <p id="event-description" class="mb-0">イベントの説明がここに表示されます。</p>
+                    </div>
+                </div>
+                
+                <!-- アクション選択 -->
+                <div class="col-md-12">
+                    <div class="card p-3">
+                        <h3>対応アクション選択</h3>
+                        <div id="action-result" class="alert alert-info d-none">
+                            アクション結果がここに表示されます。
+                        </div>
+                        <div id="actions-list" class="row mt-3">
+                            <div class="col-12">
+                                <div class="loader"></div>
+                                <p class="text-center">アクションを読み込み中...</p>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between mt-3">
+                            <button id="execute-action-btn" class="btn btn-primary" disabled>選択したアクションを実行</button>
+                            <button id="next-turn-btn" class="btn btn-secondary" disabled>次のターンへ</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 結果画面 -->
+        <div id="result-screen" style="display: none;">
+            <div class="card p-4">
+                <h2 class="text-center">シミュレーション終了</h2>
+                <div class="text-center mb-4">
+                    <h3>最終スコア: <span id="final-score">0</span>点</h3>
+                    <h4>評価: <span id="final-rating">-</span></h4>
+                </div>
+                
+                <div id="report-container" class="mb-4">
+                    <h3>対応レポート</h3>
+                    <div id="text-report" class="border p-3 bg-light">
+                        <div class="loader"></div>
+                        <p class="text-center">レポートを生成中...</p>
+                    </div>
+                </div>
+                
+                <div class="text-center">
+                    <a id="pdf-report-link" href="#" class="btn btn-success mb-3" download target="_blank">PDFレポートをダウンロード</a>
+                    <button id="restart-btn" class="btn btn-primary">新しいシナリオを開始</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // グローバル変数
+        let selectedActionId = null;
+        let currentTurn = 0;
+        let gameOver = false;
+        
+        // DOMが読み込まれたら実行
+        document.addEventListener('DOMContentLoaded', function() {
+            // シナリオ一覧を取得
+            fetchScenarios();
+            
+            // イベントリスナー設定
+            document.getElementById('execute-action-btn').addEventListener('click', executeAction);
+            document.getElementById('next-turn-btn').addEventListener('click', nextTurn);
+            document.getElementById('restart-btn').addEventListener('click', restartGame);
+        });
+        
+        // シナリオ一覧を取得
+        function fetchScenarios() {
+            fetch('/api/scenarios')
+                .then(response => response.json())
+                .then(scenarios => {
+                    const scenariosContainer = document.getElementById('scenarios-list');
+                    scenariosContainer.innerHTML = '';
+                    
+                    scenarios.forEach(scenario => {
+                        const scenarioCard = document.createElement('div');
+                        scenarioCard.className = 'col-md-4 mb-3';
+                        scenarioCard.innerHTML = `
+                            <div class="card h-100 action-card">
+                                <div class="card-body">
+                                    <h5 class="card-title">${scenario.name}</h5>
+                                    <h6 class="card-subtitle mb-2 text-muted">${scenario.category} (${scenario.difficulty})</h6>
+                                    <p class="card-text">${scenario.description}</p>
+                                </div>
+                                <div class="card-footer">
+                                    <button class="btn btn-outline-primary w-100 start-scenario-btn" 
+                                            data-scenario-id="${scenario.id}">
+                                        このシナリオを開始
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                        scenariosContainer.appendChild(scenarioCard);
+                    });
+                    
+                    // シナリオ開始ボタンのイベントリスナー
+                    document.querySelectorAll('.start-scenario-btn').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const scenarioId = this.getAttribute('data-scenario-id');
+                            startScenario(scenarioId);
+                        });
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching scenarios:', error);
+                    document.getElementById('scenarios-list').innerHTML = 
+                        '<div class="col-12"><div class="alert alert-danger">シナリオの読み込みに失敗しました。</div></div>';
+                });
+        }
+        
+        // シナリオを開始
+        function startScenario(scenarioId) {
+            fetch('/api/start', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ scenario_id: scenarioId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // 画面切り替え
+                    document.getElementById('scenario-selection').style.display = 'none';
+                    document.getElementById('game-screen').style.display = 'block';
+                    
+                    // 状態の初期表示
+                    updateState(data.state);
+                    currentTurn = data.turn;
+                    updateTurnCounter(currentTurn);
+                    
+                    // 次のターンへ
+                    nextTurn();
+                } else {
+                    alert('シナリオの開始に失敗しました: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error starting scenario:', error);
+                alert('シナリオの開始中にエラーが発生しました。');
+            });
+        }
+        
+        // 次のターンへ
+        function nextTurn() {
+            // ボタン状態更新
+            document.getElementById('execute-action-btn').disabled = true;
+            document.getElementById('next-turn-btn').disabled = true;
+            
+            // アクション結果をクリア
+            const actionResult = document.getElementById('action-result');
+            actionResult.classList.add('d-none');
+            
+            fetch('/api/next-turn', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.game_over) {
+                    // ゲーム終了処理
+                    gameOver = true;
+                    alert(data.message);
+                    showResultScreen();
+                    return;
+                }
+                
+                // 状態の更新
+                updateState(data.state);
+                currentTurn = data.turn;
+                updateTurnCounter(currentTurn);
+                
+                // イベントの表示
+                document.getElementById('event-description').textContent = data.event.description;
+                
+                // 利用可能なアクションを取得
+                fetchActions();
+            })
+            .catch(error => {
+                console.error('Error in next turn:', error);
+                alert('ターン進行中にエラーが発生しました。');
+            });
+        }
+        
+        // 利用可能なアクションを取得
+        function fetchActions() {
+            fetch('/api/actions')
+                .then(response => response.json())
+                .then(actions => {
+                    const actionsContainer = document.getElementById('actions-list');
+                    actionsContainer.innerHTML = '';
+                    
+                    actions.forEach(action => {
+                        const successRate = Math.round(action.calculated_success_rate * 100);
+                        
+                        const actionCard = document.createElement('div');
+                        actionCard.className = 'col-md-4 mb-3';
+                        actionCard.innerHTML = `
+                            <div class="card h-100 action-card" data-action-id="${action.id}">
+                                <div class="card-body">
+                                    <h5 class="card-title">${action.name}</h5>
+                                    <h6 class="card-subtitle mb-2 text-muted">${action.category}</h6>
+                                    <p class="card-text">${action.description}</p>
+                                    <div class="d-flex justify-content-between">
+                                        <span>成功率:</span>
+                                        <span>${successRate}%</span>
+                                    </div>
+                                    <div class="progress-bar-container">
+                                        <div class="progress-bar" style="width: ${successRate}%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        actionsContainer.appendChild(actionCard);
+                    });
+                    
+                    // アクション選択のイベントリスナー
+                    document.querySelectorAll('.action-card').forEach(card => {
+                        card.addEventListener('click', function() {
+                            // 以前の選択をクリア
+                            document.querySelectorAll('.action-card').forEach(c => 
+                                c.classList.remove('selected-action'));
+                            
+                            // 新しい選択を反映
+                            this.classList.add('selected-action');
+                            selectedActionId = this.getAttribute('data-action-id');
+                            
+                            // 実行ボタンを有効化
+                            document.getElementById('execute-action-btn').disabled = false;
+                        });
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching actions:', error);
+                    document.getElementById('actions-list').innerHTML = 
+                        '<div class="col-12"><div class="alert alert-danger">アクションの読み込みに失敗しました。</div></div>';
+                });
+        }
+        
+        // アクションを実行
+        function executeAction() {
+            if (!selectedActionId) return;
+            
+            fetch('/api/take-action', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ action_id: selectedActionId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // 結果表示
+                const actionResult = document.getElementById('action-result');
+                actionResult.innerHTML = data.success 
+                    ? `<div class="result-success"><strong>✅ 成功:</strong> ${data.message}</div>`
+                    : `<div class="result-failure"><strong>❌ 失敗:</strong> ${data.message}</div>`;
+                
+                if (data.state_changes) {
+                    let changesHtml = '<div class="mt-2"><strong>状態変化:</strong><ul>';
+                    
+                    for (const [key, value] of Object.entries(data.state_changes)) {
+                        if (value !== 0) {
+                            const changeStr = value > 0 ? `+${value}` : `${value}`;
+                            changesHtml += `<li>${key}: ${changeStr}</li>`;
+                        }
+                    }
+                    
+                    changesHtml += '</ul></div>';
+                    actionResult.innerHTML += changesHtml;
+                }
+                
+                actionResult.classList.remove('d-none');
+                
+                // 状態の更新
+                updateState(data.state);
+                
+                // ゲーム終了チェック
+                if (data.game_over) {
+                    gameOver = true;
+                    alert(data.critical_message || 'ゲームが終了しました。');
+                    showResultScreen();
+                    return;
+                }
+                
+                // 次のターンボタンを有効化
+                document.getElementById('next-turn-btn').disabled = false;
+                
+                // 最大ターン数チェック
+                if (currentTurn >= 10) {
+                    gameOver = true;
+                    alert('最大ターン数に達しました。');
+                    showResultScreen();
+                }
+            })
+            .catch(error => {
+                console.error('Error executing action:', error);
+                alert('アクション実行中にエラーが発生しました。');
+            });
+        }
+        
+        // 状態表示を更新
+        function updateState(state) {
+            // CPU
+            document.getElementById('cpu-value').textContent = `${state.cpu}%`;
+            document.getElementById('cpu-bar').style.width = `${state.cpu}%`;
+            document.getElementById('cpu-bar').style.backgroundColor = getColorForValue(state.cpu);
+            
+            // メモリ
+            document.getElementById('memory-value').textContent = `${state.memory}%`;
+            document.getElementById('memory-bar').style.width = `${state.memory}%`;
+            document.getElementById('memory-bar').style.backgroundColor = getColorForValue(state.memory);
+            
+            // ディスク
+            document.getElementById('disk-value').textContent = `${state.disk}%`;
+            document.getElementById('disk-bar').style.width = `${state.disk}%`;
+            document.getElementById('disk-bar').style.backgroundColor = getColorForValue(state.disk);
+            
+            // ネットワーク
+            document.getElementById('network-value').textContent = `${state.network}%`;
+            document.getElementById('network-bar').style.width = `${state.network}%`;
+            document.getElementById('network-bar').style.backgroundColor = getColorForValue(state.network);
+            
+            // サービス
+            document.getElementById('services-value').textContent = `${state.services}/5`;
+            
+            // アラート
+            document.getElementById('alerts-value').textContent = state.alerts;
+            
+            // SLAリスク
+            document.getElementById('sla-value').textContent = `${state.sla_risk}%`;
+        }
+        
+        // 値に応じた色を取得
+        function getColorForValue(value) {
+            if (value < 60) return '#198754'; // 緑
+            if (value < 80) return '#ffc107'; // 黄
+            return '#dc3545'; // 赤
+        }
+        
+        // ターン表示を更新
+        function updateTurnCounter(turn) {
+            document.getElementById('turn-counter').textContent = `ターン: ${turn}/10`;
+        }
+        
+        // 結果画面を表示
+        function showResultScreen() {
+            // レポート取得
+            fetch('/api/report')
+                .then(response => response.json())
+                .then(data => {
+                    // スコア表示
+                    const score = data.score;
+                    document.getElementById('final-score').textContent = score;
+                    
+                    // 評価表示
+                    let rating = '';
+                    if (score < 300) rating = 'C (改善の余地あり)';
+                    else if (score < 500) rating = 'B (標準的な対応)';
+                    else if (score < 700) rating = 'A (優れた対応)';
+                    else rating = 'S (卓越した対応)';
+                    document.getElementById('final-rating').textContent = rating;
+                    
+                    // テキストレポート表示
+                    document.getElementById('text-report').innerHTML = 
+                        `<pre>${data.text_report}</pre>`;
+                    
+                    // PDFリンク設定
+                    if (data.pdf_url) {
+                        document.getElementById('pdf-report-link').href = data.pdf_url;
+                        document.getElementById('pdf-report-link').style.display = 'inline-block';
+                    } else {
+                        document.getElementById('pdf-report-link').style.display = 'none';
+                    }
+                    
+                    // 画面切り替え
+                    document.getElementById('game-screen').style.display = 'none';
+                    document.getElementById('result-screen').style.display = 'block';
+                })
+                .catch(error => {
+                    console.error('Error fetching report:', error);
+                    alert('レポートの取得中にエラーが発生しました。');
+                });
+        }
+        
+        // ゲームを再開
+        function restartGame() {
+            // セッションクリーンアップ
+            fetch('/api/clean-session', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                // 変数リセット
+                selectedActionId = null;
+                currentTurn = 0;
+                gameOver = false;
+                
+                // 画面切り替え
+                document.getElementById('result-screen').style.display = 'none';
+                document.getElementById('scenario-selection').style.display = 'block';
+                
+                // シナリオ一覧を再取得
+                fetchScenarios();
+            })
+            .catch(error => {
+                console.error('Error restarting game:', error);
+                alert('ゲームの再開中にエラーが発生しました。');
+            });
+        }
+    </script>
+</body>
+</html>
