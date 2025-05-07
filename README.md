@@ -40,27 +40,27 @@
 
 ## 🚀 クイックスタート
 
-```bash
+```
 # クローン
 $ git clone https://github.com/yourusername/infra-risk-simulator.git
 $ cd infra-risk-simulator
+```
 
 # 依存関係インストール
 $ pip install -r requirements.txt
 
 # データディレクトリ作成
 $ mkdir -p data/logs data/reports
+
 CLI版起動
-bash
-コピーする
-編集する
+```
 $ python cli/main.py
 # 特定シナリオ指定
 $ python cli/main.py --scenario S001
+```
+
 Web版起動
-bash
-コピーする
-編集する
+```
 $ python web/app.py
 # アクセス
 http://127.0.0.1:5000/
@@ -71,11 +71,11 @@ S007	AWS RDS高負荷	レプリケーション遅延により応答が鈍化	NOR
 S010	SSL証明書期限切れ	HTTPS接続が不可能に	NORMAL
 S014	K8s Pod起動エラー	ConfigMapミスによるPod連続失敗	HARD
 S020	地震による障害	UPS切替と再起動対応が同時発生	EXPERT
+```
 
-🧪 テストと開発
-bash
-コピーする
-編集する
+
+## 🧪 テストと開発
+
 # ユニットテスト
 pytest
 
@@ -86,41 +86,25 @@ pytest --cov=app
 アクションCSV：data/actions.csv
 
 使用Python：3.8 以上
-
 使用FW：Flask（Web版）
-
 出力：テキスト／PDFレポート
 
-📈 将来の展望
+## 📈 将来の展望
 シナリオエディタ搭載（GUI/CSV編集）
-
 チーム対応モード（複数役割で対応）
-
 スマホUI対応
-
 AI補助による最適アクション提案
-
 Slack/Discord通知連携
 
-🧩 応用・活用シーン
+## 🧩 応用・活用シーン
 新人インフラ研修（想定外状況への訓練）
-
 SRE選考試験・社内昇格評価
-
 BCP演習（地震/火災後対応訓練）
-
 提案用デモ（リスク管理可視化の提案）
 
-🔧 非機能要件
-区分	内容
-パフォーマンス	CLI応答1秒以内 / Web表示2秒以内（同時接続10人想定）
-セキュリティ	セッション管理 / 自動クリーンアップ（2h） / 保存なし
-拡張性	UIとロジック分離 / CSV+プラグイン方式で柔軟追加可能
 
-📂 ディレクトリ構成
-bash
-コピーする
-編集する
+## 📂 ディレクトリ構成
+```
 infra-risk-simulator/
 ├── app/            # ロジック本体（状態/確率/レポート）
 ├── cli/            # CLI表示・操作
@@ -131,7 +115,9 @@ infra-risk-simulator/
 ├── requirements.txt
 ├── README.md
 └── .gitignore
-🧠 ブラックジャック理論の応用
+```
+
+## 🧠 ブラックジャック理論の応用
 ブラックジャック	本ツールでの対応
 引く/止まる	アクションを実行 / 控える判断
 バースト	SLA違反・システムダウン
